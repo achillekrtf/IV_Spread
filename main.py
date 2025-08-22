@@ -208,13 +208,13 @@ def calculate_iv_spread_metrics(data):
 def get_data(symbol, limit=LOOKBACK, timeframe=TIMEFRAME):
     """Télécharge les données OHLC depuis Alpaca"""
     try:
-    end_dt = datetime.now()
+        end_dt = datetime.now()
         start_dt = end_dt - timedelta(days=30)  # Plus de données pour les calculs
         start_str = start_dt.strftime('%Y-%m-%d')
         end_str = end_dt.strftime('%Y-%m-%d')
         
         bars = api.get_bars(symbol, timeframe, start=start_str, end=end_str, adjustment='raw').df
-    return bars.tail(limit)
+        return bars.tail(limit)
     except Exception as e:
         logging.warning(f"Erreur avec les données gratuites: {e}, utilisation de données simulées")
         return generate_simulated_data(limit)
@@ -480,8 +480,8 @@ def execute_live_trade(symbol, signal_data, current_price):
     try:
         if signal_data['signal'] == 1:
             # Signal d'achat
-    account = api.get_account()
-    equity = float(account.equity)
+            account = api.get_account()
+            equity = float(account.equity)
             
             # Calculer la taille de position basée sur le sizing dynamique
             position_size_pct = signal_data['position_size']
@@ -496,17 +496,17 @@ def execute_live_trade(symbol, signal_data, current_price):
                 if existing_position:
                     logging.info(f"Position existante: {existing_position.qty} @ ${existing_position.avg_entry_price}")
                     return "Position déjà ouverte"
-    except:
-        pass
+            except:
+                pass
 
             # Placer l'ordre d'achat
             order = api.submit_order(
-            symbol=symbol,
-            qty=qty,
-            side="buy",
-            type="market",
-            time_in_force="day"
-        )
+                symbol=symbol,
+                qty=qty,
+                side="buy",
+                type="market",
+                time_in_force="day"
+            )
             
             logging.info(f"ORDRE D'ACHAT EXÉCUTÉ: {qty} {symbol} @ ${current_price:.2f}")
             return f"ACHAT {qty} {symbol} - Taille: {position_size_pct:.1%}"
@@ -517,7 +517,7 @@ def execute_live_trade(symbol, signal_data, current_price):
                 existing_position = api.get_position(symbol)
                 if existing_position:
                     # Fermer la position
-        api.close_position(symbol)
+                    api.close_position(symbol)
                     logging.info(f"POSITION FERMÉE: {existing_position.qty} {symbol}")
                     return f"FERMETURE position {symbol}"
                 else:

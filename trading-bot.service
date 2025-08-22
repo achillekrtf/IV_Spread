@@ -1,0 +1,28 @@
+[Unit]
+Description=Trading Bot IV Spread
+After=network.target
+Wants=network.target
+
+[Service]
+Type=forking
+User=root
+Group=root
+WorkingDirectory=/opt/trading-bot/IV_Spread
+Environment=PATH=/opt/trading-bot/IV_Spread/venv/bin
+ExecStart=/opt/trading-bot/IV_Spread/start_bot.sh
+ExecStop=/opt/trading-bot/IV_Spread/stop_bot.sh
+ExecReload=/opt/trading-bot/IV_Spread/stop_bot.sh && /opt/trading-bot/IV_Spread/start_bot.sh
+PIDFile=/var/run/trading-bot.pid
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+# Sécurité
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ReadWritePaths=/var/log /var/run /opt/trading-bot
+
+[Install]
+WantedBy=multi-user.target

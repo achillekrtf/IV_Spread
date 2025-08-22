@@ -1,0 +1,16 @@
+# Alpaca Trading API Credentials
+# Obtenez vos clés sur: https://app.alpaca.markets/paper/dashboard/overview
+
+ALPACA_API_KEY=your_api_key_here
+ALPACA_SECRET_KEY=your_secret_key_here
+
+# Configuration du trading
+SYMBOL=AAPL
+TIMEFRAME=1Min
+LOOKBACK=200
+SHORT_WINDOW=10
+LONG_WINDOW=50
+RISK_LEVEL=0.02
+
+# URL de l'API (paper trading pour les tests)
+BASE_URL=https://paper-api.alpaca.markets

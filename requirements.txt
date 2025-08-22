@@ -1,0 +1,19 @@
+# ========================================
+# Dépendances pour le Bot Trading IV Spread
+# ========================================
+
+# API Trading Alpaca
+alpaca-trade-api==3.2.0
+alpaca-py==0.42.0
+
+# Data Science & Math
+pandas==2.3.2
+numpy==2.0.2
+scipy==1.13.1
+
+# Configuration & Logging
+python-dotenv==1.1.1
+
+# Utilitaires
+requests>=2.31.0
+websockets>=10.4

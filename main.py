@@ -626,6 +626,92 @@ def execute_live_trade(symbol, signal_data, current_price):
         logging.error(f"Erreur exécution trade: {e}")
         return f"Erreur trade: {e}"
 
+def test_trading_functionality():
+    """Test the trading functionality with a small test order"""
+    try:
+        print("\n🧪 TEST DE FONCTIONNALITÉ DE TRADING")
+        print("-" * 50)
+        
+        # Get current account info
+        account = api.get_account()
+        print(f"💰 Capital initial: ${float(account.equity):,.2f}")
+        print(f"💵 Cash disponible: ${float(account.cash):,.2f}")
+        
+        # Get current price
+        latest_trade = api.get_latest_trade(SYMBOL)
+        current_price = float(latest_trade.price)
+        print(f"📊 Prix actuel {SYMBOL}: ${current_price:.2f}")
+        
+        # Calculate test order size (1 share or minimum)
+        test_qty = 1
+        test_cost = test_qty * current_price
+        
+        if test_cost > float(account.cash):
+            print("❌ Cash insuffisant pour le test")
+            return False
+        
+        print(f"🧪 Test order: {test_qty} {SYMBOL} @ ~${current_price:.2f}")
+        print("⏳ Placement de l'ordre de test...")
+        
+        # Place test buy order
+        test_order = api.submit_order(
+            symbol=SYMBOL,
+            qty=test_qty,
+            side="buy",
+            type="market",
+            time_in_force="day"
+        )
+        
+        print(f"✅ Ordre de test placé: {test_order.id}")
+        
+        # Wait a moment for order to fill
+        time.sleep(3)
+        
+        # Check order status
+        order_status = api.get_order(test_order.id)
+        print(f"📊 Statut ordre: {order_status.status}")
+        
+        if order_status.status == 'filled':
+            print(f"✅ Ordre exécuté @ ${float(order_status.filled_avg_price):.2f}")
+            
+            # Wait a moment then close the position
+            time.sleep(2)
+            print("🔄 Fermeture de la position de test...")
+            
+            # Close the test position
+            close_order = api.submit_order(
+                symbol=SYMBOL,
+                qty=test_qty,
+                side="sell",
+                type="market",
+                time_in_force="day"
+            )
+            
+            time.sleep(3)
+            close_status = api.get_order(close_order.id)
+            
+            if close_status.status == 'filled':
+                print(f"✅ Position fermée @ ${float(close_status.filled_avg_price):.2f}")
+                
+                # Calculate P&L
+                buy_price = float(order_status.filled_avg_price)
+                sell_price = float(close_status.filled_avg_price)
+                pnl = (sell_price - buy_price) * test_qty
+                
+                print(f"💰 P&L test: ${pnl:.2f}")
+                print("✅ TEST DE TRADING RÉUSSI!")
+                return True
+            else:
+                print(f"⚠️  Erreur fermeture: {close_status.status}")
+                return False
+        else:
+            print(f"❌ Erreur exécution: {order_status.status}")
+            return False
+            
+    except Exception as e:
+        print(f"❌ Erreur test trading: {e}")
+        return False
+
 def main():
     logging.info("=== Bot LIVE IV Spread Strategy Started ===")
     print("🚀 BOT LIVE - Stratégie IV Spread Sophistiquée")
@@ -638,6 +724,12 @@ def main():
     print(f"🎯 Seuils Z: Court {Z_THRESH_SHORT}, Long {Z_THRESH_LONG}")
     print(f"📊 Tolérance MA: {MA_TOLERANCE}, Seuil accélération: {ACCEL_THRESH}")
     print("=" * 80)
+    
+    # Run trading functionality test
+    test_success = test_trading_functionality()
+    if not test_success:
+        print("❌ Test de trading échoué. Vérifiez vos clés API et permissions.")
+        return
     
     cycle_count = 0
     while True:

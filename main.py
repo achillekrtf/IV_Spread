@@ -664,12 +664,23 @@ def test_trading_functionality():
         
         print(f"✅ Ordre de test placé: {test_order.id}")
         
-        # Wait a moment for order to fill
-        time.sleep(3)
+        # Wait longer for order to fill (market orders can take time)
+        print("⏳ Attente de l'exécution de l'ordre...")
+        max_wait = 30  # Wait up to 30 seconds
+        wait_time = 0
         
-        # Check order status
-        order_status = api.get_order(test_order.id)
-        print(f"📊 Statut ordre: {order_status.status}")
+        while wait_time < max_wait:
+            order_status = api.get_order(test_order.id)
+            print(f"📊 Statut ordre: {order_status.status}")
+            
+            if order_status.status == 'filled':
+                break
+            elif order_status.status in ['rejected', 'canceled']:
+                print(f"❌ Ordre {order_status.status}")
+                return False
+            
+            time.sleep(2)
+            wait_time += 2
         
         if order_status.status == 'filled':
             print(f"✅ Ordre exécuté @ ${float(order_status.filled_avg_price):.2f}")
@@ -687,8 +698,25 @@ def test_trading_functionality():
                 time_in_force="day"
             )
             
-            time.sleep(3)
-            close_status = api.get_order(close_order.id)
+            print(f"✅ Ordre de fermeture placé: {close_order.id}")
+            print("⏳ Attente de l'exécution de l'ordre de fermeture...")
+            
+            # Wait for sell order to fill
+            max_wait = 30
+            wait_time = 0
+            
+            while wait_time < max_wait:
+                close_status = api.get_order(close_order.id)
+                print(f"📊 Statut ordre fermeture: {close_status.status}")
+                
+                if close_status.status == 'filled':
+                    break
+                elif close_status.status in ['rejected', 'canceled']:
+                    print(f"❌ Ordre fermeture {close_status.status}")
+                    return False
+                
+                time.sleep(2)
+                wait_time += 2
             
             if close_status.status == 'filled':
                 print(f"✅ Position fermée @ ${float(close_status.filled_avg_price):.2f}")

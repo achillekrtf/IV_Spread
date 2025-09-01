@@ -208,13 +208,13 @@ def calculate_iv_spread_metrics(data):
 def get_data(symbol, limit=LOOKBACK, timeframe=TIMEFRAME):
     """Télécharge les données OHLC depuis Alpaca"""
     try:
-    end_dt = datetime.now()
+        end_dt = datetime.now()
         start_dt = end_dt - timedelta(days=30)  # Plus de données pour les calculs
         start_str = start_dt.strftime('%Y-%m-%d')
         end_str = end_dt.strftime('%Y-%m-%d')
         
         bars = api.get_bars(symbol, timeframe, start=start_str, end=end_str, adjustment='raw').df
-    return bars.tail(limit)
+        return bars.tail(limit)
     except Exception as e:
         logging.warning(f"Erreur avec les données gratuites: {e}, utilisation de données simulées")
         return generate_simulated_data(limit)

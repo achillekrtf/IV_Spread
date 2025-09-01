@@ -4,9 +4,10 @@
 # Script de démarrage du Bot Trading
 # ========================================
 
-BOT_DIR="/opt/trading-bot/IV_Spread"
-LOG_FILE="/var/log/trading-bot.log"
-PID_FILE="/var/run/trading-bot.pid"
+# Use current directory instead of hardcoded path
+BOT_DIR="$(pwd)"
+LOG_FILE="$BOT_DIR/trading-bot.log"
+PID_FILE="$BOT_DIR/trading-bot.pid"
 
 # Fonction de log
 log() {
@@ -25,11 +26,11 @@ if [ -f "$PID_FILE" ]; then
     fi
 fi
 
-# Aller dans le répertoire du bot
-cd $BOT_DIR || {
-    log "❌ Erreur: Impossible d'accéder au répertoire $BOT_DIR"
+# Vérifier que nous sommes dans le bon répertoire
+if [ ! -f "main.py" ]; then
+    log "❌ Erreur: main.py non trouvé. Assurez-vous d'être dans le répertoire du bot"
     exit 1
-}
+fi
 
 # Activer l'environnement virtuel
 source venv/bin/activate || {
@@ -45,7 +46,7 @@ fi
 
 # Démarrer le bot en arrière-plan
 log "🚀 Démarrage du bot de trading..."
-nohup python main.py > /dev/null 2>&1 &
+nohup python3 main.py > /dev/null 2>&1 &
 BOT_PID=$!
 
 # Sauvegarder le PID

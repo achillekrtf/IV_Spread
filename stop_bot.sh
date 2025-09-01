@@ -4,8 +4,10 @@
 # Script d'arrêt du Bot Trading
 # ========================================
 
-PID_FILE="/var/run/trading-bot.pid"
-LOG_FILE="/var/log/trading-bot.log"
+# Use current directory instead of hardcoded path
+BOT_DIR="$(pwd)"
+PID_FILE="$BOT_DIR/trading-bot.pid"
+LOG_FILE="$BOT_DIR/trading-bot.log"
 
 # Fonction de log
 log() {

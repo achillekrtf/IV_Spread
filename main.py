@@ -653,13 +653,27 @@ def test_trading_functionality():
         print(f"🧪 Test order: {test_qty} {SYMBOL} @ ~${current_price:.2f}")
         print("⏳ Placement de l'ordre de test...")
         
-        # Place test buy order
+        # Get current bid/ask to ensure fill
+        try:
+            quote = api.get_latest_quote(SYMBOL)
+            if quote and quote.ask_price:
+                limit_price = float(quote.ask_price) + 0.01  # Slightly above ask to ensure fill
+                print(f"📊 Prix limite: ${limit_price:.2f} (ask: ${float(quote.ask_price):.2f})")
+            else:
+                limit_price = current_price + 0.50  # Add 50 cents to ensure fill
+                print(f"📊 Prix limite: ${limit_price:.2f}")
+        except:
+            limit_price = current_price + 0.50
+            print(f"📊 Prix limite: ${limit_price:.2f}")
+        
+        # Place test buy order with limit price to ensure fill
         test_order = api.submit_order(
             symbol=SYMBOL,
             qty=test_qty,
             side="buy",
-            type="market",
-            time_in_force="day"
+            type="limit",
+            time_in_force="day",
+            limit_price=limit_price
         )
         
         print(f"✅ Ordre de test placé: {test_order.id}")
@@ -678,6 +692,34 @@ def test_trading_functionality():
             elif order_status.status in ['rejected', 'canceled']:
                 print(f"❌ Ordre {order_status.status}")
                 return False
+            elif order_status.status == 'accepted' and wait_time > 15:
+                # If order is still accepted after 15 seconds, try to cancel and replace
+                print("🔄 Ordre non exécuté, annulation et remplacement...")
+                try:
+                    api.cancel_order(test_order.id)
+                    time.sleep(1)
+                    
+                    # Get fresh quote and place new order
+                    quote = api.get_latest_quote(SYMBOL)
+                    if quote and quote.ask_price:
+                        new_limit_price = float(quote.ask_price) + 0.05  # Higher limit
+                    else:
+                        new_limit_price = current_price + 1.00  # Much higher limit
+                    
+                    print(f"🔄 Nouvel ordre avec prix limite: ${new_limit_price:.2f}")
+                    test_order = api.submit_order(
+                        symbol=SYMBOL,
+                        qty=test_qty,
+                        side="buy",
+                        type="limit",
+                        time_in_force="day",
+                        limit_price=new_limit_price
+                    )
+                    wait_time = 0  # Reset timer
+                    continue
+                except Exception as e:
+                    print(f"❌ Erreur remplacement ordre: {e}")
+                    return False
             
             time.sleep(2)
             wait_time += 2
@@ -689,13 +731,27 @@ def test_trading_functionality():
             time.sleep(2)
             print("🔄 Fermeture de la position de test...")
             
-            # Close the test position
+            # Get current bid price for sell order
+            try:
+                quote = api.get_latest_quote(SYMBOL)
+                if quote and quote.bid_price:
+                    sell_limit_price = float(quote.bid_price) - 0.01  # Slightly below bid to ensure fill
+                    print(f"📊 Prix limite vente: ${sell_limit_price:.2f} (bid: ${float(quote.bid_price):.2f})")
+                else:
+                    sell_limit_price = current_price - 0.50  # Subtract 50 cents to ensure fill
+                    print(f"📊 Prix limite vente: ${sell_limit_price:.2f}")
+            except:
+                sell_limit_price = current_price - 0.50
+                print(f"📊 Prix limite vente: ${sell_limit_price:.2f}")
+            
+            # Close the test position with limit order
             close_order = api.submit_order(
                 symbol=SYMBOL,
                 qty=test_qty,
                 side="sell",
-                type="market",
-                time_in_force="day"
+                type="limit",
+                time_in_force="day",
+                limit_price=sell_limit_price
             )
             
             print(f"✅ Ordre de fermeture placé: {close_order.id}")

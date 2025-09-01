@@ -208,16 +208,50 @@ def calculate_iv_spread_metrics(data):
 def get_data(symbol, limit=LOOKBACK, timeframe=TIMEFRAME):
     """Télécharge les données OHLC depuis Alpaca"""
     try:
+        # Try to get real-time data first
         end_dt = datetime.now()
-        start_dt = end_dt - timedelta(days=30)  # Plus de données pour les calculs
+        start_dt = end_dt - timedelta(days=1)  # Just get today's data
         start_str = start_dt.strftime('%Y-%m-%d')
         end_str = end_dt.strftime('%Y-%m-%d')
         
         bars = api.get_bars(symbol, timeframe, start=start_str, end=end_str, adjustment='raw').df
+        
+        if bars.empty:
+            # If no bars, try to get latest trade
+            latest_trade = api.get_latest_trade(symbol)
+            if latest_trade:
+                current_price = float(latest_trade.price)
+                # Create a simple DataFrame with current price
+                data = pd.DataFrame({
+                    'open': [current_price],
+                    'high': [current_price],
+                    'low': [current_price],
+                    'close': [current_price],
+                    'volume': [1000]
+                }, index=[datetime.now()])
+                return data
+        
         return bars.tail(limit)
     except Exception as e:
-        logging.warning(f"Erreur avec les données gratuites: {e}, utilisation de données simulées")
-        return generate_simulated_data(limit)
+        logging.warning(f"Erreur avec les données Alpaca: {e}")
+        # Try alternative method - get latest quote
+        try:
+            quote = api.get_latest_quote(symbol)
+            if quote:
+                current_price = float(quote.ask_price) if quote.ask_price else float(quote.bid_price)
+                data = pd.DataFrame({
+                    'open': [current_price],
+                    'high': [current_price],
+                    'low': [current_price],
+                    'close': [current_price],
+                    'volume': [1000]
+                }, index=[datetime.now()])
+                return data
+        except Exception as e2:
+            logging.warning(f"Erreur avec quote: {e2}")
+        
+        logging.warning("Utilisation de données simulées avec prix actuel AAPL")
+        return generate_simulated_data_with_current_price(limit)
 
 def generate_simulated_data(limit=LOOKBACK):
     """Génère des données simulées pour les tests"""
@@ -236,6 +270,30 @@ def generate_simulated_data(limit=LOOKBACK):
         'open': prices[:-1],
         'high': [p * (1 + abs(np.random.normal(0, 0.01))) for p in prices[:-1]],
         'low': [p * (1 - abs(np.random.normal(0, 0.01))) for p in prices[:-1]],
+        'close': prices[1:],
+        'volume': np.random.randint(1000, 10000, limit)
+    }, index=dates)
+    
+    return data
+
+def generate_simulated_data_with_current_price(limit=LOOKBACK):
+    """Génère des données simulées basées sur le prix actuel d'AAPL"""
+    np.random.seed(42)
+    
+    # Use current AAPL price as base
+    base_price = 232.04  # Current AAPL price
+    returns = np.random.normal(0, 0.005, limit)  # Smaller volatility for more realistic data
+    prices = [base_price]
+    
+    for ret in returns:
+        new_price = prices[-1] * (1 + ret)
+        prices.append(new_price)
+    
+    dates = pd.date_range(start=datetime.now() - timedelta(days=limit), periods=limit, freq='1min')
+    data = pd.DataFrame({
+        'open': prices[:-1],
+        'high': [p * (1 + abs(np.random.normal(0, 0.005))) for p in prices[:-1]],
+        'low': [p * (1 - abs(np.random.normal(0, 0.005))) for p in prices[:-1]],
         'close': prices[1:],
         'volume': np.random.randint(1000, 10000, limit)
     }, index=dates)
